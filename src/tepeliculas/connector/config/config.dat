@@ -1,0 +1,10 @@
+[Server]
+localhost
+[Port]
+3306
+[User]
+igor
+[Password]
+1319
+[Database]
+bd_peliculas
