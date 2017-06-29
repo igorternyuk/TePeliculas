@@ -1,15 +1,256 @@
 package tepeliculas.gui;
 
+import java.awt.Image;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.NumberFormatter;
+import tepeliculas.dao.ClassificationDAO;
+import tepeliculas.dao.CountryDAO;
+import tepeliculas.dao.DirectorDAO;
+import tepeliculas.dao.GenreDAO;
+import tepeliculas.dao.MovieDAO;
+import tepeliculas.dto.Classification;
+import tepeliculas.dto.Country;
+import tepeliculas.dto.Director;
+import tepeliculas.dto.Genre;
+import tepeliculas.dto.Movie;
+import tepeliculas.tmodels.TModelMovies;
+
 /**
  *
  * @author igor
  */
 public class MainWindow extends javax.swing.JFrame {
-
+    private static final int ROW_HEIGHT = 30;
+    private static final int DURATION_MIN = 1;
+    private static final int DURATION_MAX = 3*31*24*60;
+    private static final int RATING_MAX = 100;
+    private static final String NO_PHOTO_PATH = "img/noPhoto.png";
+    private String imagePath = null;
+    private final MovieDAO daoMovie;
+    private final ClassificationDAO daoClassification;
+    private final GenreDAO daoGenre;
+    private final DirectorDAO daoDirector;
+    private final CountryDAO daoCountry;
     public MainWindow() {
+        daoMovie = new MovieDAO();
+        daoClassification = new ClassificationDAO();
+        daoGenre = new GenreDAO();
+        daoDirector = new DirectorDAO();
+        daoCountry = new CountryDAO();
         initComponents();
+        adjustGUI();
+        adjustSpinners();
+        loadCombos();
+        List<Movie> list = daoMovie.readAll();
+        updateTableOfMovies(list);
     }
-
+    
+    private void adjustGUI(){
+        this.setLocationRelativeTo(null);
+        this.setResizable(false);
+        tableOfMovies.setRowHeight(ROW_HEIGHT);
+        tableOfMovies.setAutoCreateRowSorter(true);
+        txtID.setEditable(false);
+        resetInputForm();
+        resetSearchForm();
+     }
+    
+    private void loadCombos(){
+        reloadComboClassifications();
+        reloadComboGenres();
+        reloadComboDirectors();
+        reloadComboCountries();
+    }
+    
+    private void reloadComboClassifications(){
+        comboClassification.removeAllItems();
+        comboSearchClassification.removeAllItems();
+        List<Classification> list_class = daoClassification.readAll();
+        for(Classification c : list_class){
+            comboClassification.addItem(c);
+            comboSearchClassification.addItem(c);
+        }
+    }
+    
+    private void reloadComboGenres(){
+        comboGenre.removeAllItems();
+        comboSearchGenre.removeAllItems();
+        List<Genre> list = daoGenre.readAll();
+        for(Genre g : list){
+            comboGenre.addItem(g);
+            comboSearchGenre.addItem(g);
+        }
+    }
+    
+    private void reloadComboDirectors(){
+        comboDirector.removeAllItems();
+        comboSearchDirector.removeAllItems();
+        List<Director> list = daoDirector.readAll();
+        for(Director d : list){
+            comboDirector.addItem(d);
+            comboSearchDirector.addItem(d);
+        }
+    }
+    
+    private void reloadComboCountries(){
+        comboSearchCountry.removeAllItems();
+        List<Country> list = daoCountry.readAll();
+        for(Country c : list){
+            comboSearchCountry.addItem(c);
+        }
+    }
+    
+    private void adjustSpinners(){
+        setNumericValidatorForSpinner(spinnerDuration, 1, DURATION_MIN,
+                DURATION_MAX, 1);
+        setNumericValidatorForSpinner(spinnerRating, 1, 1, RATING_MAX, 1);
+        setNumericValidatorForSpinner(spinnerDurationMIN, 1, 1, DURATION_MIN, 1);
+        setNumericValidatorForSpinner(spinnerDurationMAX, 1, 1, DURATION_MAX, 1);
+        setNumericValidatorForSpinner(spinnerRatingMIN, 1, 1, RATING_MAX, 1);
+        setNumericValidatorForSpinner(spinnerRatingMAX, 1, 1, RATING_MAX, 1);
+    }
+    
+    private void setNumericValidatorForSpinner(JSpinner spinner, int val,
+            int min, int max, int step){
+        SpinnerNumberModel model = new SpinnerNumberModel(val, min, max, step);
+        spinner.setModel(model);
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner,
+                "##########");
+        NumberFormatter formatter = (NumberFormatter)editor.getTextField()
+                .getFormatter();
+        formatter.setAllowsInvalid(false);
+        formatter.setOverwriteMode(true);
+        spinner.setEditor(editor);
+    }
+    
+    private void updateTableOfMovies(List<Movie> list){        
+        tableOfMovies.setModel(new TModelMovies(list));
+    }
+    
+    private ImageIcon getScaledImage(String path, byte[] pic){
+        ImageIcon icn;
+        if(path != null){
+            icn = new ImageIcon(path);
+        } else if(pic != null){
+            icn = new ImageIcon(pic);
+        } else {
+            icn = new ImageIcon(MainWindow.class.getResource(NO_PHOTO_PATH));
+        }
+        Image scaledImage = icn.getImage().getScaledInstance(
+            lblPoster.getWidth(),
+            lblPoster.getHeight(),
+            Image.SCALE_SMOOTH
+        );
+        return new ImageIcon(scaledImage);
+    }
+    
+    private boolean checkInput(){
+        return !txtName.getText().isEmpty() &&
+               !txtAreaDesc.getText().isEmpty() &&
+               ((int)spinnerDuration.getValue() != 0);
+    }
+    
+    private Movie createMovieFromUserInput(){
+        Movie movie = new Movie();
+        String name = txtName.getText();
+        movie.setName(name);
+        String description = txtAreaDesc.getText();
+        movie.setDescription(description);
+        Classification c = (Classification)comboClassification.getSelectedItem();
+        int fk_classification = c.getId();
+        movie.setClassification(fk_classification);
+        Genre g = (Genre)comboGenre.getSelectedItem();
+        int fk_genre = g.getId();
+        movie.setGenre(fk_genre);
+        int duration = (int)spinnerDuration.getValue();
+        movie.setDuration(duration);
+        java.sql.Date rd = new java.sql.Date(txtReleaseDate.getDate().getTime());
+        movie.setDate(rd);
+        Director d = (Director)comboDirector.getSelectedItem();
+        int fk_director = d.getId();
+        movie.setDirector(fk_director);
+        int rating = (int)spinnerRating.getValue();
+        movie.setRating(rating);
+        try(InputStream is = (imagePath == null) ?
+            MainWindow.class.getResourceAsStream(NO_PHOTO_PATH) :
+            new FileInputStream(new File(imagePath))){
+            byte[] bytes = new byte[is.available()];
+            is.read(bytes);
+            movie.setPicture(bytes);
+        } catch (IOException ex) {
+            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return movie;
+    }
+    
+    private void resetInputForm(){
+        txtID.setText(null);
+        txtName.setText(null);
+        txtAreaDesc.setText(null);
+        if(comboClassification.getItemCount() > 0){
+            comboClassification.setSelectedIndex(0);
+        }
+        if(comboGenre.getItemCount() > 0){
+            comboGenre.setSelectedIndex(0);
+        }
+        spinnerDuration.setValue(DURATION_MIN);
+        Calendar cal = Calendar.getInstance();
+        txtReleaseDate.setDate(cal.getTime());
+        if(comboDirector.getItemCount() > 0){
+            comboDirector.setSelectedIndex(0);
+        }
+        spinnerRating.setValue(0);
+        lblPoster.setIcon(null);
+    }
+    
+    private void showSelectedMovie(){
+        int row = tableOfMovies.getSelectedRow();
+        Movie selectedMovie = ((TModelMovies)tableOfMovies.getModel()).getMovie(row);
+        txtID.setText(String.valueOf(selectedMovie.getId()));
+        txtName.setText(selectedMovie.getName());
+        txtAreaDesc.setText(selectedMovie.getDescription());
+        int id_classification = selectedMovie.getClassification();
+        Classification c = daoClassification.read(id_classification);
+        for(int i = 0; i < comboClassification.getItemCount(); ++i){
+            if(comboClassification.getItemAt(i).equals(c)){
+                comboClassification.setSelectedIndex(i);
+                break;
+            }
+        }
+        int id_genre = selectedMovie.getGenre();
+        Genre g = daoGenre.read(id_genre);
+        for(int i = 0; i < comboGenre.getItemCount(); ++i){
+            if(comboGenre.getItemAt(i).equals(g)){
+                comboGenre.setSelectedIndex(i);
+                break;
+            }
+        }
+        spinnerDuration.setValue(selectedMovie.getDuration());
+        txtReleaseDate.setDate(new java.util.Date(selectedMovie.getDate().getTime()));
+        int id_director = selectedMovie.getDirector();
+        Director d = daoDirector.read(id_director);
+        for(int i = 0; i < comboDirector.getItemCount(); ++i){
+            if(comboDirector.getItemAt(i).equals(d)){
+                comboDirector.setSelectedIndex(i);
+                break;
+            }
+        }
+        spinnerRating.setValue(selectedMovie.getRating());
+        lblPoster.setIcon(getScaledImage(null, selectedMovie.getPicture()));       
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -55,32 +296,60 @@ public class MainWindow extends javax.swing.JFrame {
         tableOfMovies = new javax.swing.JTable();
         jLabel5 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
-        jButton9 = new javax.swing.JButton();
-        jButton10 = new javax.swing.JButton();
-        jButton11 = new javax.swing.JButton();
+        btnInsertMovie = new javax.swing.JButton();
+        btnUpdateMovie = new javax.swing.JButton();
+        btnDeleteMovie = new javax.swing.JButton();
+        btnNext = new javax.swing.JButton();
+        btnPrevious = new javax.swing.JButton();
+        btnFirst = new javax.swing.JButton();
+        btnLast = new javax.swing.JButton();
+        btnExit = new javax.swing.JButton();
+        btnSearch = new javax.swing.JButton();
+        btnReset = new javax.swing.JButton();
+        checkBoxClassification = new javax.swing.JCheckBox();
+        txtMovieNameSearch = new javax.swing.JTextField();
+        comboSearchClassification = new javax.swing.JComboBox();
+        comboSearchGenre = new javax.swing.JComboBox();
+        checkBoxGenre = new javax.swing.JCheckBox();
+        checkBoxDuration = new javax.swing.JCheckBox();
+        spinnerDurationMIN = new javax.swing.JSpinner();
+        jLabel14 = new javax.swing.JLabel();
+        spinnerDurationMAX = new javax.swing.JSpinner();
+        jLabel15 = new javax.swing.JLabel();
+        txtMovieDateMAX = new com.toedter.calendar.JDateChooser();
+        txtMovieDateMIN = new com.toedter.calendar.JDateChooser();
+        checkBoxDate = new javax.swing.JCheckBox();
+        checkBoxDirector = new javax.swing.JCheckBox();
+        comboSearchDirector = new javax.swing.JComboBox();
+        spinnerRatingMAX = new javax.swing.JSpinner();
+        spinnerRatingMIN = new javax.swing.JSpinner();
+        checkBoxRating = new javax.swing.JCheckBox();
+        btnFiveBestMovies = new javax.swing.JButton();
+        checkBoxCountry = new javax.swing.JCheckBox();
+        comboSearchCountry = new javax.swing.JComboBox();
+        jLabel21 = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
-        jTextField2 = new javax.swing.JTextField();
+        txtID = new javax.swing.JTextField();
+        txtName = new javax.swing.JTextField();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        txtAreaDesc = new javax.swing.JTextArea();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox();
-        jComboBox2 = new javax.swing.JComboBox();
+        comboClassification = new javax.swing.JComboBox();
+        comboGenre = new javax.swing.JComboBox();
         jLabel11 = new javax.swing.JLabel();
-        jDateChooser1 = new com.toedter.calendar.JDateChooser();
-        jSpinner1 = new javax.swing.JSpinner();
+        txtReleaseDate = new com.toedter.calendar.JDateChooser();
+        spinnerDuration = new javax.swing.JSpinner();
         jLabel12 = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
-        jComboBox3 = new javax.swing.JComboBox();
-        jLabel14 = new javax.swing.JLabel();
-        jLabel15 = new javax.swing.JLabel();
+        comboDirector = new javax.swing.JComboBox();
+        lblPoster = new javax.swing.JLabel();
         jLabel16 = new javax.swing.JLabel();
-        jSpinner2 = new javax.swing.JSpinner();
-        jButton1 = new javax.swing.JButton();
+        spinnerRating = new javax.swing.JSpinner();
+        btnChooseImage = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         menuRegister = new javax.swing.JMenu();
         menuItemRegisterCountry = new javax.swing.JMenuItem();
@@ -283,45 +552,176 @@ public class MainWindow extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        tableOfMovies.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                tableOfMoviesMouseReleased(evt);
+            }
+        });
         jScrollPane1.setViewportView(tableOfMovies);
 
         jLabel5.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
         jLabel5.setText("List of movies");
 
         jPanel2.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jButton9.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
-        jButton9.setText("Insert");
+        btnInsertMovie.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnInsertMovie.setText("Insert");
+        btnInsertMovie.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnInsertMovieActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnInsertMovie, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 230, 111, -1));
 
-        jButton10.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
-        jButton10.setText("update");
+        btnUpdateMovie.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnUpdateMovie.setText("update");
+        btnUpdateMovie.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUpdateMovieActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnUpdateMovie, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 230, 109, -1));
 
-        jButton11.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
-        jButton11.setText("delete");
+        btnDeleteMovie.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnDeleteMovie.setText("delete");
+        btnDeleteMovie.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDeleteMovieActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnDeleteMovie, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 230, 103, -1));
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jButton9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(365, 365, 365))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap(114, Short.MAX_VALUE)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton9)
-                    .addComponent(jButton10)
-                    .addComponent(jButton11))
-                .addContainerGap())
-        );
+        btnNext.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnNext.setText("Next");
+        btnNext.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNextActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnNext, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 10, 110, -1));
+
+        btnPrevious.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnPrevious.setText("Previous");
+        btnPrevious.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPreviousActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnPrevious, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 10, 110, -1));
+
+        btnFirst.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnFirst.setText("First");
+        btnFirst.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFirstActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnFirst, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 10, 110, -1));
+
+        btnLast.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnLast.setText("Last");
+        btnLast.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLastActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnLast, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 10, 110, -1));
+
+        btnExit.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnExit.setText("Exit");
+        btnExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnExitActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnExit, new org.netbeans.lib.awtextra.AbsoluteConstraints(450, 230, 100, -1));
+
+        btnSearch.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnSearch.setText("Search");
+        btnSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnSearch, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 190, 90, -1));
+
+        btnReset.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnReset.setText("Reset");
+        btnReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnResetActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnReset, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 190, 110, -1));
+
+        checkBoxClassification.setText("classification");
+        jPanel2.add(checkBoxClassification, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 100, -1, -1));
+
+        txtMovieNameSearch.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(txtMovieNameSearch, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 50, 470, -1));
+
+        comboSearchClassification.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(comboSearchClassification, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 100, 120, -1));
+
+        comboSearchGenre.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(comboSearchGenre, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 130, 120, -1));
+
+        checkBoxGenre.setText("genre");
+        jPanel2.add(checkBoxGenre, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 130, -1, -1));
+
+        checkBoxDuration.setText("duration");
+        jPanel2.add(checkBoxDuration, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 100, -1, -1));
+
+        spinnerDurationMIN.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(spinnerDurationMIN, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 100, 110, -1));
+
+        jLabel14.setText("min");
+        jPanel2.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 80, -1, -1));
+
+        spinnerDurationMAX.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(spinnerDurationMAX, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 100, 110, -1));
+
+        jLabel15.setText("max");
+        jPanel2.add(jLabel15, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 80, -1, -1));
+        jPanel2.add(txtMovieDateMAX, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 130, 110, -1));
+        jPanel2.add(txtMovieDateMIN, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 130, 110, -1));
+
+        checkBoxDate.setText("date");
+        jPanel2.add(checkBoxDate, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 130, -1, -1));
+
+        checkBoxDirector.setText("director");
+        jPanel2.add(checkBoxDirector, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 160, -1, -1));
+
+        comboSearchDirector.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(comboSearchDirector, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 160, 120, -1));
+
+        spinnerRatingMAX.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(spinnerRatingMAX, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 160, 110, -1));
+
+        spinnerRatingMIN.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(spinnerRatingMIN, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 160, 110, -1));
+
+        checkBoxRating.setText("rating");
+        jPanel2.add(checkBoxRating, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 160, -1, 22));
+
+        btnFiveBestMovies.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnFiveBestMovies.setText("5 best");
+        btnFiveBestMovies.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFiveBestMoviesActionPerformed(evt);
+            }
+        });
+        jPanel2.add(btnFiveBestMovies, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 190, 110, -1));
+
+        checkBoxCountry.setText("country");
+        jPanel2.add(checkBoxCountry, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 190, -1, -1));
+
+        comboSearchCountry.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jPanel2.add(comboSearchCountry, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 190, 120, -1));
+
+        jLabel21.setText("Name:");
+        jPanel2.add(jLabel21, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 50, -1, 20));
 
         jPanel3.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
 
@@ -334,13 +734,13 @@ public class MainWindow extends javax.swing.JFrame {
         jLabel8.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel8.setText("Description:");
 
-        jTextField1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        txtID.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jTextField2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        txtName.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane2.setViewportView(jTextArea1);
+        txtAreaDesc.setColumns(20);
+        txtAreaDesc.setRows(5);
+        jScrollPane2.setViewportView(txtAreaDesc);
 
         jLabel9.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel9.setText("Genre:");
@@ -348,16 +748,16 @@ public class MainWindow extends javax.swing.JFrame {
         jLabel10.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel10.setText("Classification:");
 
-        jComboBox1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        comboClassification.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jComboBox2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        comboGenre.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
         jLabel11.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel11.setText("Date:");
 
-        jDateChooser1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        txtReleaseDate.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jSpinner1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        spinnerDuration.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
         jLabel12.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel12.setText("Duration:");
@@ -365,110 +765,136 @@ public class MainWindow extends javax.swing.JFrame {
         jLabel13.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel13.setText("Director:");
 
-        jComboBox3.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        comboDirector.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jLabel14.setText("Poster:");
-
-        jLabel15.setBackground(new java.awt.Color(153, 204, 255));
-        jLabel15.setOpaque(true);
+        lblPoster.setBackground(new java.awt.Color(153, 204, 255));
+        lblPoster.setOpaque(true);
 
         jLabel16.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel16.setText("Rating:");
 
-        jSpinner2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        spinnerRating.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jButton1.setText("Choose image ...");
+        btnChooseImage.setText("Choose image ...");
+        btnChooseImage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnChooseImageActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(12, 12, 12)
                         .addComponent(jLabel6)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(30, 30, 30)
+                        .addComponent(txtID, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(12, 12, 12)
                         .addComponent(jLabel7)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 303, Short.MAX_VALUE)
+                        .addGap(12, 12, 12)
+                        .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jLabel10)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(12, 12, 12)
+                        .addComponent(jLabel8))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel9)
-                            .addComponent(jLabel8)
-                            .addComponent(jLabel11)
-                            .addComponent(jLabel12)
-                            .addComponent(jLabel13))
-                        .addGap(23, 23, 23)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jComboBox3, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jDateChooser1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jComboBox2, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jSpinner1)))
-                    .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(12, 12, 12)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(54, 54, 54)
+                        .addComponent(lblPoster, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(12, 12, 12)
+                        .addComponent(btnChooseImage, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(12, 12, 12)
                         .addComponent(jLabel16)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jSpinner2, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(136, 136, 136)
+                        .addComponent(spinnerRating, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jLabel14)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
+                        .addGap(8, 8, 8)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel12)
+                            .addComponent(jLabel11))
+                        .addGap(71, 71, 71)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(spinnerDuration, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtReleaseDate, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGap(8, 8, 8)
+                                .addComponent(jLabel10))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(jLabel9))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGap(8, 8, 8)
+                                .addComponent(jLabel13)))
+                        .addGap(43, 43, 43)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(comboDirector, 0, 172, Short.MAX_VALUE)
+                            .addComponent(comboGenre, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(comboClassification, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGap(11, 11, 11))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel7)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(12, 12, 12)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(txtID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(2, 2, 2)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel6)
+                            .addComponent(jLabel7))))
+                .addGap(6, 6, 6)
                 .addComponent(jLabel8)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(12, 12, 12)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(4, 4, 4)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(12, 12, 12)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addComponent(jLabel10))
+                    .addComponent(comboClassification, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(13, 13, 13)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel9)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel12)
+                        .addGap(4, 4, 4))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(comboGenre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(12, 12, 12)
+                        .addComponent(spinnerDuration, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(8, 8, 8)
+                        .addComponent(jLabel11))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(7, 7, 7)
+                        .addComponent(txtReleaseDate, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel12))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jDateChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel11))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel13)
-                    .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel14)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jSpinner2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel16))
-                .addContainerGap())
+                    .addComponent(comboDirector, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(6, 6, 6)
+                .addComponent(lblPoster, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(6, 6, 6)
+                .addComponent(btnChooseImage)
+                .addGap(6, 6, 6)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(2, 2, 2)
+                        .addComponent(jLabel16))
+                    .addComponent(spinnerRating, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
 
         menuRegister.setText("Register");
@@ -530,11 +956,11 @@ public class MainWindow extends javax.swing.JFrame {
                         .addComponent(jLabel5)
                         .addGap(322, 322, 322))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE)
+                            .addComponent(jScrollPane1))
                         .addContainerGap())))
         );
         layout.setVerticalGroup(
@@ -545,9 +971,9 @@ public class MainWindow extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 267, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -558,6 +984,248 @@ public class MainWindow extends javax.swing.JFrame {
     private void menuItemRegisterCountryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemRegisterCountryActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_menuItemRegisterCountryActionPerformed
+
+    private void btnChooseImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnChooseImageActionPerformed
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("images",
+                "jpg", "jpeg", "png", "bmp");
+        fileChooser.addChoosableFileFilter(filter);
+        if(fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION){
+            File selectedFile = fileChooser.getSelectedFile();
+            String path = selectedFile.getAbsolutePath();
+            lblPoster.setIcon(getScaledImage(path, null));
+            imagePath = path;
+        } else {
+            System.out.println("No file selected");
+        }
+    }//GEN-LAST:event_btnChooseImageActionPerformed
+
+    private void btnInsertMovieActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInsertMovieActionPerformed
+        if(checkInput()){
+            Movie movie = createMovieFromUserInput();
+            daoMovie.insert(movie);
+            updateTableOfMovies(daoMovie.repeatLastSearch());
+            resetInputForm();
+        } else {
+            JOptionPane.showMessageDialog(
+               null,
+               "One or more input fields are empty",
+               "Please, fill the form",
+               JOptionPane.WARNING_MESSAGE
+            );
+        }
+    }//GEN-LAST:event_btnInsertMovieActionPerformed
+
+    private void btnUpdateMovieActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateMovieActionPerformed
+        if(!txtID.getText().isEmpty() && checkInput()){
+            Movie movie = createMovieFromUserInput();
+            movie.setId(Integer.parseInt(txtID.getText()));
+            if(JOptionPane.showConfirmDialog
+                (
+                    null,
+                    "Do you really want to update this movie?",
+                    imagePath, JOptionPane.YES_NO_OPTION
+                ) == JOptionPane.YES_OPTION
+            ){
+                daoMovie.update(movie);
+                resetInputForm();
+            }
+            updateTableOfMovies(daoMovie.repeatLastSearch());
+        } else {
+            JOptionPane.showMessageDialog(
+               null,
+               "One or more input fields are empty",
+               "Please, fill the form",
+               JOptionPane.WARNING_MESSAGE
+            );
+        }
+    }//GEN-LAST:event_btnUpdateMovieActionPerformed
+
+    private void btnDeleteMovieActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteMovieActionPerformed
+        if(!txtID.getText().isEmpty()){
+            int id = Integer.parseInt(txtID.getText());
+            if(JOptionPane.showConfirmDialog
+                (
+                    null,
+                    "Do you really want to delete this movie?",
+                    imagePath, JOptionPane.YES_NO_OPTION
+                ) == JOptionPane.YES_OPTION
+            ){
+                daoMovie.delete(id);
+                resetInputForm();
+            }
+            updateTableOfMovies(daoMovie.repeatLastSearch());
+        } else {
+            JOptionPane.showMessageDialog(
+               null,
+               "ID field is empty",
+               "Please, put the movie ID in",
+               JOptionPane.WARNING_MESSAGE
+            );
+        }
+    }//GEN-LAST:event_btnDeleteMovieActionPerformed
+
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
+        int rowCount = tableOfMovies.getRowCount();
+        if(rowCount > 0){
+            int row = tableOfMovies.getSelectedRow();
+            ++row;
+            if(row >= rowCount){
+                row = 0;
+            }
+            tableOfMovies.setRowSelectionInterval(row, row);
+            showSelectedMovie();
+        }
+    }//GEN-LAST:event_btnNextActionPerformed
+
+    private void btnPreviousActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPreviousActionPerformed
+        int rowCount = tableOfMovies.getRowCount();
+        if(rowCount > 0){
+            int row = tableOfMovies.getSelectedRow();
+            --row;
+            if(row < 0){
+                row = rowCount - 1;
+            }
+            tableOfMovies.setRowSelectionInterval(row, row);
+            showSelectedMovie();
+        }
+    }//GEN-LAST:event_btnPreviousActionPerformed
+
+    private void btnFirstActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFirstActionPerformed
+        int rowCount = tableOfMovies.getRowCount();
+        if(rowCount > 0){
+            tableOfMovies.setRowSelectionInterval(0, 0);
+            showSelectedMovie();
+        }
+    }//GEN-LAST:event_btnFirstActionPerformed
+
+    private void btnLastActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLastActionPerformed
+        int rowCount = tableOfMovies.getRowCount();
+        if(rowCount > 0){
+            tableOfMovies.setRowSelectionInterval(rowCount - 1, rowCount - 1);
+            showSelectedMovie();
+        }
+    }//GEN-LAST:event_btnLastActionPerformed
+
+    private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
+        int res = JOptionPane.showConfirmDialog(
+            null,
+            "Do you really want to quit?",
+            "Confirm application quit please",
+            JOptionPane.YES_NO_OPTION
+        );
+        if(res == JOptionPane.YES_OPTION){
+            System.exit(0);
+        }
+    }//GEN-LAST:event_btnExitActionPerformed
+
+    private void tableOfMoviesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableOfMoviesMouseReleased
+        if(evt.getClickCount() == 2){
+            showSelectedMovie();
+        }
+    }//GEN-LAST:event_tableOfMoviesMouseReleased
+
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        String regExp = txtMovieNameSearch.getText();
+        boolean considerClassification = checkBoxClassification.isSelected();
+        Classification classification = 
+                (Classification)comboSearchClassification.getSelectedItem();        
+        int id_classification = classification.getId();
+        boolean considerGenre = checkBoxGenre.isSelected();
+        Genre genre = (Genre)comboSearchGenre.getSelectedItem();
+        int id_genre = genre.getId();
+        boolean considerDuration = checkBoxDuration.isSelected();
+        int dur_min = (int)spinnerDurationMIN.getValue();
+        int dur_max = (int)spinnerDurationMAX.getValue();
+        if(dur_max < dur_min){
+            dur_max = dur_min;
+            spinnerDurationMAX.setValue(dur_max);
+        }
+        boolean considerDate = checkBoxDate.isSelected();
+        long mls1 = txtMovieDateMIN.getDate().getTime();
+        long mls2 = txtMovieDateMAX.getDate().getTime();
+        if(mls2 < mls1){
+            mls2 = mls1;
+            txtMovieDateMAX.setDate(txtMovieDateMIN.getDate());
+        }        
+        java.sql.Date date_min = new java.sql.Date(mls1);
+        java.sql.Date date_max = new java.sql.Date(mls2);
+        boolean considerDirector = checkBoxDirector.isSelected();
+        Director dir = (Director)comboSearchDirector.getSelectedItem();
+        int id_director = dir.getId();
+        boolean considerCountry = checkBoxCountry.isSelected();
+        Country c = (Country)comboSearchCountry.getSelectedItem();
+        int id_country = c.getId();
+        boolean considerRating = checkBoxRating.isSelected();
+        int rating_min = (int)spinnerRatingMIN.getValue();
+        int rating_max = (int)spinnerRatingMAX.getValue();
+        if(rating_max < rating_min){
+            rating_max = rating_min;
+            spinnerRatingMAX.setValue(rating_max);
+        }
+        List<Movie> list = daoMovie.search(
+                regExp,
+                considerClassification,
+                id_classification,
+                considerGenre,
+                id_genre,
+                considerDuration,
+                dur_min,
+                dur_max,
+                considerDate,
+                date_min,
+                date_max,
+                considerDirector,
+                id_director,
+                considerCountry,
+                id_country,
+                considerRating,
+                rating_min,
+                rating_max
+        );
+        updateTableOfMovies(list);
+    }//GEN-LAST:event_btnSearchActionPerformed
+
+    private void btnResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnResetActionPerformed
+        resetSearchForm();
+        resetInputForm();
+        updateTableOfMovies(daoMovie.readAll());
+        tableOfMovies.getSelectionModel().clearSelection();
+    }//GEN-LAST:event_btnResetActionPerformed
+
+    private void resetSearchForm(){
+        txtMovieNameSearch.setText(null);
+        checkBoxClassification.setSelected(false);
+        if(comboSearchClassification.getItemCount() > 0){
+            comboSearchClassification.setSelectedIndex(0);
+        }
+        checkBoxGenre.setSelected(false);
+        if(comboSearchGenre.getItemCount() > 0){
+            comboSearchGenre.setSelectedIndex(0);
+        }
+        checkBoxDuration.setSelected(false);
+        spinnerDurationMIN.setValue(0);
+        spinnerDurationMAX.setValue(0);
+        checkBoxDate.setSelected(false);
+        Calendar cal = Calendar.getInstance();
+        txtMovieDateMIN.setDate(cal.getTime());
+        txtMovieDateMAX.setDate(cal.getTime());
+        checkBoxDirector.setSelected(false);
+        if(comboSearchDirector.getItemCount() > 0){
+            comboSearchDirector.setSelectedIndex(0);
+        }
+        checkBoxCountry.setSelected(false);
+        if(comboSearchCountry.getItemCount() > 0){
+            comboSearchCountry.setSelectedIndex(0);
+        }
+        checkBoxRating.setSelected(false);
+        spinnerRatingMIN.setValue(0);
+        spinnerRatingMAX.setValue(0);
+    }
+    private void btnFiveBestMoviesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiveBestMoviesActionPerformed
+        updateTableOfMovies(daoMovie.getFiveBestMovies());
+    }//GEN-LAST:event_btnFiveBestMoviesActionPerformed
 
     /**
      * @param args the command line arguments
@@ -595,24 +1263,42 @@ public class MainWindow extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnChooseImage;
     private javax.swing.JToggleButton btnCloseDirectorRegisterWindow;
     private javax.swing.JToggleButton btnCloseDirectorRegisterWindow1;
     private javax.swing.JToggleButton btnCloseDirectorRegisterWindow2;
     private javax.swing.JToggleButton btnCloseDirectorRegisterWindow3;
+    private javax.swing.JButton btnDeleteMovie;
+    private javax.swing.JButton btnExit;
+    private javax.swing.JButton btnFirst;
+    private javax.swing.JButton btnFiveBestMovies;
+    private javax.swing.JButton btnInsertMovie;
+    private javax.swing.JButton btnLast;
+    private javax.swing.JButton btnNext;
+    private javax.swing.JButton btnPrevious;
     private javax.swing.JToggleButton btnRegisterDirector;
     private javax.swing.JToggleButton btnRegisterDirector1;
     private javax.swing.JToggleButton btnRegisterDirector2;
     private javax.swing.JToggleButton btnRegisterDirector3;
+    private javax.swing.JButton btnReset;
+    private javax.swing.JButton btnSearch;
+    private javax.swing.JButton btnUpdateMovie;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JCheckBox checkBoxClassification;
+    private javax.swing.JCheckBox checkBoxCountry;
+    private javax.swing.JCheckBox checkBoxDate;
+    private javax.swing.JCheckBox checkBoxDirector;
+    private javax.swing.JCheckBox checkBoxDuration;
+    private javax.swing.JCheckBox checkBoxGenre;
+    private javax.swing.JCheckBox checkBoxRating;
+    private javax.swing.JComboBox comboClassification;
     private javax.swing.JComboBox<String> comboCountryOfDirector;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton10;
-    private javax.swing.JButton jButton11;
-    private javax.swing.JButton jButton9;
-    private javax.swing.JComboBox jComboBox1;
-    private javax.swing.JComboBox jComboBox2;
-    private javax.swing.JComboBox jComboBox3;
-    private com.toedter.calendar.JDateChooser jDateChooser1;
+    private javax.swing.JComboBox comboDirector;
+    private javax.swing.JComboBox comboGenre;
+    private javax.swing.JComboBox comboSearchClassification;
+    private javax.swing.JComboBox comboSearchCountry;
+    private javax.swing.JComboBox comboSearchDirector;
+    private javax.swing.JComboBox comboSearchGenre;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -626,6 +1312,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -639,11 +1326,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JSpinner jSpinner1;
-    private javax.swing.JSpinner jSpinner2;
-    private javax.swing.JTextArea jTextArea1;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
+    private javax.swing.JLabel lblPoster;
     private javax.swing.JFrame listOfCountries;
     private javax.swing.JMenu menuExit;
     private javax.swing.JMenuItem menuItemExit;
@@ -663,12 +1346,25 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JFrame registerCountry;
     private javax.swing.JFrame registerDirector;
     private javax.swing.JFrame registerGenre;
+    private javax.swing.JSpinner spinnerDuration;
+    private javax.swing.JSpinner spinnerDurationMAX;
+    private javax.swing.JSpinner spinnerDurationMIN;
+    private javax.swing.JSpinner spinnerRating;
+    private javax.swing.JSpinner spinnerRatingMAX;
+    private javax.swing.JSpinner spinnerRatingMIN;
     private javax.swing.JTable tableOfCountries;
     private javax.swing.JTable tableOfMovies;
+    private javax.swing.JTextArea txtAreaDesc;
     private com.toedter.calendar.JDateChooser txtDirectorDOB;
     private javax.swing.JTextField txtDirectorNameReg;
     private javax.swing.JTextField txtDirectorNameReg1;
     private javax.swing.JTextField txtDirectorNameReg2;
     private javax.swing.JTextField txtDirectorNameReg3;
+    private javax.swing.JTextField txtID;
+    private com.toedter.calendar.JDateChooser txtMovieDateMAX;
+    private com.toedter.calendar.JDateChooser txtMovieDateMIN;
+    private javax.swing.JTextField txtMovieNameSearch;
+    private javax.swing.JTextField txtName;
+    private com.toedter.calendar.JDateChooser txtReleaseDate;
     // End of variables declaration//GEN-END:variables
 }

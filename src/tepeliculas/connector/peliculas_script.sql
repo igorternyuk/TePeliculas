@@ -21,6 +21,7 @@ INSERT INTO countries(name) VALUES('Mexico');
 INSERT INTO countries(name) VALUES('Brazil');
 INSERT INTO countries(name) VALUES('England');
 INSERT INTO countries(name) VALUES('Germany');
+INSERT INTO countries(name) VALUES('Portugal');
 
 CREATE TABLE classifications(
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -62,6 +63,10 @@ CREATE TABLE directors(
 );
 
 INSERT INTO directors VALUES(default, 'Eldar Ryazanov', 'Male', '1927-11-18', 2);
+INSERT INTO directors VALUES(default, 'Manoel Cândido Pinto de Oliveira', 'Male', '1908-12-11', 9);
+INSERT INTO directors VALUES(default, 'Oleg Pogodin', 'Male', '1965-07-03', 2);
+INSERT INTO directors VALUES(default, 'Dmitriy Konstantinov', 'Male', '1968-02-25', 2);
+INSERT INTO directors VALUES(default, 'Alfredo B. Crevenna', 'Male', '1914-04-22', 5);
 
 CREATE TABLE movies(
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -70,7 +75,7 @@ CREATE TABLE movies(
     fk_classification INT,
     fk_genre INT,
     duration INT,
-    fecha_estreno DATE,
+    release_date DATE,
     fk_director INT,
     picture LONGBLOB,
     rating INT,

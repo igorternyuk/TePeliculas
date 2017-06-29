@@ -4,21 +4,21 @@ package tepeliculas.dto;
  *
  * @author igor
  */
-public class Classification extends SimpleDTO{
+public class Country extends SimpleDTO{
 
-    public Classification() {
+    public Country() {
     }
 
-    public Classification(String name) {
+    public Country(String name) {
         super(name);
     }
 
-    public Classification(int id, String name) {
+    public Country(int id, String name) {
         super(id, name);
     }
-    
+
     @Override
     public String toString() {
         return this.name;
-    }    
+    }
 }

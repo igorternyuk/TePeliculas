@@ -114,18 +114,18 @@ public class DBManager {
         }
     }
     
-    public static void main(String[] args) {
-        DBManager manager = DBManager.getInstance();
-        try {
-            PreparedStatement cmd = manager.getConnection().prepareStatement("select"
-                    + " id, nombre,descripcion from peliculas;");
-            ResultSet rs = cmd.executeQuery();
-            while(rs.next()){
-                System.out.println(String.format("id = %d, nombre = %s, desc = %s",
-                        rs.getInt(1), rs.getString(2), rs.getString(3)));
-            }
-        } catch (SQLException ex) {
-            Logger.getLogger(DBManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+//    public static void main(String[] args) {
+//        DBManager manager = DBManager.getInstance();
+//        try {
+//            PreparedStatement cmd = manager.getConnection().prepareStatement("select"
+//                    + " id, nombre,descripcion from peliculas;");
+//            ResultSet rs = cmd.executeQuery();
+//            while(rs.next()){
+//                System.out.println(String.format("id = %d, nombre = %s, desc = %s",
+//                        rs.getInt(1), rs.getString(2), rs.getString(3)));
+//            }
+//        } catch (SQLException ex) {
+//            Logger.getLogger(DBManager.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
 }
