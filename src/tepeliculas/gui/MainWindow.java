@@ -5,16 +5,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.TableColumn;
 import javax.swing.text.NumberFormatter;
 import tepeliculas.dao.ClassificationDAO;
 import tepeliculas.dao.CountryDAO;
@@ -24,8 +27,12 @@ import tepeliculas.dao.MovieDAO;
 import tepeliculas.dto.Classification;
 import tepeliculas.dto.Country;
 import tepeliculas.dto.Director;
+import tepeliculas.dto.Gender;
 import tepeliculas.dto.Genre;
 import tepeliculas.dto.Movie;
+import tepeliculas.gui.tablecelleditors.ComboBoxCellEditor;
+import tepeliculas.gui.tablecelleditors.SpinnerDateCellEditor;
+import tepeliculas.tmodels.TModelDirectors;
 import tepeliculas.tmodels.TModelMovies;
 
 /**
@@ -38,13 +45,20 @@ public class MainWindow extends javax.swing.JFrame {
     private static final int DURATION_MAX = 3*31*24*60;
     private static final int RATING_MAX = 100;
     private static final String NO_PHOTO_PATH = "img/noPhoto.png";
-    private String imagePath = null;
+    private static final Renderer renderer = new Renderer();
+    private static final List<Gender> genders = new ArrayList<>();
+    private final ComboBoxCellEditor<Gender> comboEditorGender;
     private final MovieDAO daoMovie;
     private final ClassificationDAO daoClassification;
     private final GenreDAO daoGenre;
     private final DirectorDAO daoDirector;
     private final CountryDAO daoCountry;
+    private String imagePath = null;
+
     public MainWindow() {
+        genders.add(Gender.Male);
+        genders.add(Gender.Female);
+        comboEditorGender = new ComboBoxCellEditor<>(Gender.class, genders);
         daoMovie = new MovieDAO();
         daoClassification = new ClassificationDAO();
         daoGenre = new GenreDAO();
@@ -56,6 +70,7 @@ public class MainWindow extends javax.swing.JFrame {
         loadCombos();
         List<Movie> list = daoMovie.readAll();
         updateTableOfMovies(list);
+        updateTableOfDirectors();
     }
     
     private void adjustGUI(){
@@ -66,6 +81,18 @@ public class MainWindow extends javax.swing.JFrame {
         txtID.setEditable(false);
         resetInputForm();
         resetSearchForm();
+        //Registration forms
+        formRegisterDirector.setResizable(false);
+        formRegisterDirector.setSize(288, 240);
+        formRegisterDirector.setLocationRelativeTo(null);
+        //Windows with lists
+        windowListOfDirectors.setResizable(false);
+        windowListOfDirectors.setSize(800, 480);
+        windowListOfDirectors.setLocationRelativeTo(null);
+        tableOfDirectors.setDefaultRenderer(Object.class, renderer);
+        tableOfDirectors.setRowHeight(ROW_HEIGHT);
+        tableOfDirectors.setAutoCreateRowSorter(true);
+                
      }
     
     private void loadCombos(){
@@ -107,9 +134,11 @@ public class MainWindow extends javax.swing.JFrame {
     
     private void reloadComboCountries(){
         comboSearchCountry.removeAllItems();
+        comboCountryOfDirector.removeAllItems();
         List<Country> list = daoCountry.readAll();
         for(Country c : list){
             comboSearchCountry.addItem(c);
+            comboCountryOfDirector.addItem(c);
         }
     }
     
@@ -138,6 +167,19 @@ public class MainWindow extends javax.swing.JFrame {
     
     private void updateTableOfMovies(List<Movie> list){        
         tableOfMovies.setModel(new TModelMovies(list));
+    }
+    
+    private void updateTableOfDirectors(){
+        tableOfDirectors.setModel(new TModelDirectors(daoDirector.readAll()));
+        TableColumn columnGender = tableOfDirectors.getColumnModel()
+                .getColumn(TModelDirectors.COLUMN_GENDER);
+        columnGender.setCellEditor(comboEditorGender);  
+        ComboBoxCellEditor comboCountries = new ComboBoxCellEditor(
+                Country.class, daoCountry.readAll());
+        tableOfDirectors.setDefaultEditor(Country.class, comboCountries);
+        TableColumn tc_date = tableOfDirectors.getColumnModel().getColumn(
+                TModelDirectors.COLUMN_DATE);
+        tc_date.setCellEditor(new SpinnerDateCellEditor());
     }
     
     private ImageIcon getScaledImage(String path, byte[] pic){
@@ -260,7 +302,7 @@ public class MainWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        registerDirector = new javax.swing.JFrame();
+        formRegisterDirector = new javax.swing.JFrame();
         btnRegisterDirector = new javax.swing.JToggleButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -268,7 +310,7 @@ public class MainWindow extends javax.swing.JFrame {
         rbtnFemale = new javax.swing.JRadioButton();
         txtDirectorNameReg = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
-        comboCountryOfDirector = new javax.swing.JComboBox<>();
+        comboCountryOfDirector = new javax.swing.JComboBox();
         txtDirectorDOB = new com.toedter.calendar.JDateChooser();
         jLabel4 = new javax.swing.JLabel();
         btnCloseDirectorRegisterWindow = new javax.swing.JToggleButton();
@@ -288,10 +330,15 @@ public class MainWindow extends javax.swing.JFrame {
         btnRegisterDirector3 = new javax.swing.JToggleButton();
         txtDirectorNameReg3 = new javax.swing.JTextField();
         jLabel19 = new javax.swing.JLabel();
-        listOfCountries = new javax.swing.JFrame();
+        windowListOfCountries = new javax.swing.JFrame();
         jScrollPane3 = new javax.swing.JScrollPane();
         tableOfCountries = new javax.swing.JTable();
         jLabel20 = new javax.swing.JLabel();
+        windowListOfDirectors = new javax.swing.JFrame();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        tableOfDirectors = new javax.swing.JTable();
+        jLabel23 = new javax.swing.JLabel();
+        buttonGroup2 = new javax.swing.ButtonGroup();
         jScrollPane1 = new javax.swing.JScrollPane();
         tableOfMovies = new javax.swing.JTable();
         jLabel5 = new javax.swing.JLabel();
@@ -350,6 +397,7 @@ public class MainWindow extends javax.swing.JFrame {
         jLabel16 = new javax.swing.JLabel();
         spinnerRating = new javax.swing.JSpinner();
         btnChooseImage = new javax.swing.JButton();
+        jLabel22 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         menuRegister = new javax.swing.JMenu();
         menuItemRegisterCountry = new javax.swing.JMenuItem();
@@ -364,37 +412,112 @@ public class MainWindow extends javax.swing.JFrame {
         menuExit = new javax.swing.JMenu();
         menuItemExit = new javax.swing.JMenuItem();
 
-        registerDirector.setResizable(false);
-        registerDirector.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        formRegisterDirector.setTitle("Director register form");
+        formRegisterDirector.setAlwaysOnTop(true);
+        formRegisterDirector.setResizable(false);
 
+        btnRegisterDirector.setFont(new java.awt.Font("Dialog", 1, 14)); // NOI18N
         btnRegisterDirector.setText("Registrar");
-        registerDirector.getContentPane().add(btnRegisterDirector, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 160, -1, -1));
+        btnRegisterDirector.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegisterDirectorActionPerformed(evt);
+            }
+        });
 
+        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel1.setText("Name:");
-        registerDirector.getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, -1, -1));
 
+        jLabel2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel2.setText("Gender:");
-        registerDirector.getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, -1, -1));
 
+        buttonGroup2.add(rbtnMale);
+        rbtnMale.setSelected(true);
         rbtnMale.setText("Male");
-        registerDirector.getContentPane().add(rbtnMale, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 50, -1, -1));
 
+        buttonGroup2.add(rbtnFemale);
         rbtnFemale.setText("Female");
-        registerDirector.getContentPane().add(rbtnFemale, new org.netbeans.lib.awtextra.AbsoluteConstraints(170, 50, -1, -1));
-        registerDirector.getContentPane().add(txtDirectorNameReg, new org.netbeans.lib.awtextra.AbsoluteConstraints(119, 20, 130, 20));
 
+        txtDirectorNameReg.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+
+        jLabel3.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel3.setText("Country:");
-        registerDirector.getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 90, -1, -1));
 
-        comboCountryOfDirector.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        registerDirector.getContentPane().add(comboCountryOfDirector, new org.netbeans.lib.awtextra.AbsoluteConstraints(119, 90, 130, -1));
-        registerDirector.getContentPane().add(txtDirectorDOB, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 130, 130, -1));
+        comboCountryOfDirector.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
-        jLabel4.setText("Date of birth");
-        registerDirector.getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 130, -1, -1));
+        txtDirectorDOB.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
 
+        jLabel4.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jLabel4.setText("Date of birth:");
+
+        btnCloseDirectorRegisterWindow.setFont(new java.awt.Font("Dialog", 1, 14)); // NOI18N
         btnCloseDirectorRegisterWindow.setText("Close");
-        registerDirector.getContentPane().add(btnCloseDirectorRegisterWindow, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 160, 120, -1));
+        btnCloseDirectorRegisterWindow.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCloseDirectorRegisterWindowActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout formRegisterDirectorLayout = new javax.swing.GroupLayout(formRegisterDirector.getContentPane());
+        formRegisterDirector.getContentPane().setLayout(formRegisterDirectorLayout);
+        formRegisterDirectorLayout.setHorizontalGroup(
+            formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(jLabel1)
+                .addGap(75, 75, 75)
+                .addComponent(txtDirectorNameReg, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(jLabel2)
+                .addGap(55, 55, 55)
+                .addComponent(rbtnMale)
+                .addGap(1, 1, 1)
+                .addComponent(rbtnFemale))
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(jLabel3)
+                .addGap(57, 57, 57)
+                .addComponent(comboCountryOfDirector, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(jLabel4)
+                .addGap(28, 28, 28)
+                .addComponent(txtDirectorDOB, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addComponent(btnRegisterDirector)
+                .addGap(4, 4, 4)
+                .addComponent(btnCloseDirectorRegisterWindow, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+        formRegisterDirectorLayout.setVerticalGroup(
+            formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                .addGap(10, 10, 10)
+                .addGroup(formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addComponent(jLabel1))
+                    .addComponent(txtDirectorNameReg, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
+                .addGroup(formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel2)
+                    .addComponent(rbtnMale)
+                    .addComponent(rbtnFemale))
+                .addGap(17, 17, 17)
+                .addGroup(formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel3)
+                    .addComponent(comboCountryOfDirector, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(14, 14, 14)
+                .addGroup(formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(formRegisterDirectorLayout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addComponent(jLabel4))
+                    .addComponent(txtDirectorDOB, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(20, 20, 20)
+                .addGroup(formRegisterDirectorLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnRegisterDirector)
+                    .addComponent(btnCloseDirectorRegisterWindow)))
+        );
 
         registerCountry.setLocationByPlatform(true);
         registerCountry.setResizable(false);
@@ -516,9 +639,9 @@ public class MainWindow extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        listOfCountries.setTitle("List of countries");
-        listOfCountries.setResizable(false);
-        listOfCountries.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        windowListOfCountries.setTitle("List of countries");
+        windowListOfCountries.setResizable(false);
+        windowListOfCountries.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         tableOfCountries.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -533,11 +656,56 @@ public class MainWindow extends javax.swing.JFrame {
         ));
         jScrollPane3.setViewportView(tableOfCountries);
 
-        listOfCountries.getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 40, 390, -1));
+        windowListOfCountries.getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 40, 390, -1));
 
         jLabel20.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
         jLabel20.setText("List of countries");
-        listOfCountries.getContentPane().add(jLabel20, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 10, -1, -1));
+        windowListOfCountries.getContentPane().add(jLabel20, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 10, -1, -1));
+
+        tableOfDirectors.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        tableOfDirectors.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {},
+                {},
+                {},
+                {}
+            },
+            new String [] {
+
+            }
+        ));
+        tableOfDirectors.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                tableOfDirectorsMouseReleased(evt);
+            }
+        });
+        jScrollPane4.setViewportView(tableOfDirectors);
+
+        jLabel23.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        jLabel23.setText("List of directors");
+
+        javax.swing.GroupLayout windowListOfDirectorsLayout = new javax.swing.GroupLayout(windowListOfDirectors.getContentPane());
+        windowListOfDirectors.getContentPane().setLayout(windowListOfDirectorsLayout);
+        windowListOfDirectorsLayout.setHorizontalGroup(
+            windowListOfDirectorsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(windowListOfDirectorsLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 777, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(windowListOfDirectorsLayout.createSequentialGroup()
+                .addGap(322, 322, 322)
+                .addComponent(jLabel23)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        windowListOfDirectorsLayout.setVerticalGroup(
+            windowListOfDirectorsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, windowListOfDirectorsLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel23)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 403, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -897,6 +1065,9 @@ public class MainWindow extends javax.swing.JFrame {
                     .addComponent(spinnerRating, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
 
+        jLabel22.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        jLabel22.setText("Information");
+
         menuRegister.setText("Register");
 
         menuItemRegisterCountry.setText("Country");
@@ -914,6 +1085,11 @@ public class MainWindow extends javax.swing.JFrame {
         menuRegister.add(menuItemRegisterGenre);
 
         menuItemRegisterDirector.setText("Director");
+        menuItemRegisterDirector.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuItemRegisterDirectorActionPerformed(evt);
+            }
+        });
         menuRegister.add(menuItemRegisterDirector);
 
         jMenuBar1.add(menuRegister);
@@ -930,6 +1106,11 @@ public class MainWindow extends javax.swing.JFrame {
         menuList.add(menuItemListOfGenres);
 
         menuItemListOfDirectors.setText("Directors");
+        menuItemListOfDirectors.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuItemListOfDirectorsActionPerformed(evt);
+            }
+        });
         menuList.add(menuItemListOfDirectors);
 
         jMenuBar1.add(menuList);
@@ -950,24 +1131,26 @@ public class MainWindow extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(jLabel5)
-                        .addGap(322, 322, 322))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE)
-                            .addComponent(jScrollPane1))
-                        .addContainerGap())))
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1))
+                .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(116, 116, 116)
+                .addComponent(jLabel22)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel5)
+                .addGap(256, 256, 256))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel5)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel22))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
@@ -1223,9 +1406,102 @@ public class MainWindow extends javax.swing.JFrame {
         spinnerRatingMIN.setValue(0);
         spinnerRatingMAX.setValue(0);
     }
+    
     private void btnFiveBestMoviesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiveBestMoviesActionPerformed
         updateTableOfMovies(daoMovie.getFiveBestMovies());
+        resetInputForm();
     }//GEN-LAST:event_btnFiveBestMoviesActionPerformed
+
+    private void tableOfDirectorsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableOfDirectorsMouseReleased
+        if(evt.getClickCount() == 1){
+            int row = evt.getY() / tableOfDirectors.getRowHeight();
+            int col = tableOfDirectors.getColumnModel().getColumnIndexAtX(evt.getX());
+            TModelDirectors model = (TModelDirectors)tableOfDirectors.getModel();
+            Director d = model.getDirector(row);
+            if(row >= 0 && row < tableOfDirectors.getRowCount() &&
+               col >= 0 && col < tableOfDirectors.getColumnCount()){
+                Object val = tableOfDirectors.getValueAt(row, col);
+                if(val instanceof JButton){
+                    JButton clickedButton = (JButton)val;
+                    if(clickedButton.getName().equalsIgnoreCase("edit")){
+                        int res = JOptionPane.showConfirmDialog(
+                            null,
+                            "Do you really want to update selected director"
+                                 + " information?",
+                            "Confirm update, please",
+                            JOptionPane.YES_NO_OPTION
+                        );
+                        if(res == JOptionPane.YES_OPTION){
+                            String newName = (String)model.getValueAt(row,
+                                TModelDirectors.COLUMN_NAME);
+                            Gender newGender = (Gender)model.getValueAt(row,
+                                TModelDirectors.COLUMN_GENDER);
+                            java.util.Date dob = (java.util.Date)model.getValueAt(
+                                row, TModelDirectors.COLUMN_DATE);
+                            java.sql.Date newDob = 
+                                    new java.sql.Date(dob.getTime());
+                            Country newCountry = (Country)model.getValueAt(row,
+                                    TModelDirectors.COLUMN_COUNTRY);
+                            Director newDirector = new Director(newName, newGender, newDob,
+                            newCountry.getId());
+                            newDirector.setId(d.getId());
+                            daoDirector.update(newDirector);
+                            reloadComboDirectors();
+                            updateTableOfDirectors();
+                        }
+                    } else if(clickedButton.getName().equalsIgnoreCase("delete")){
+                        int res = JOptionPane.showConfirmDialog(
+                            null,
+                            "Do you really want to delete selected director"
+                             + " from database?",
+                            "Confirm deleting, please",
+                            JOptionPane.YES_NO_OPTION
+                        );
+                        if(res == JOptionPane.YES_OPTION){
+                            daoDirector.delete(d.getId());
+                            reloadComboDirectors();
+                            updateTableOfDirectors();
+                        }
+                    }
+                }
+            }
+        }
+    }//GEN-LAST:event_tableOfDirectorsMouseReleased
+
+    private void menuItemListOfDirectorsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemListOfDirectorsActionPerformed
+        windowListOfDirectors.setVisible(true);
+    }//GEN-LAST:event_menuItemListOfDirectorsActionPerformed
+
+    private void menuItemRegisterDirectorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemRegisterDirectorActionPerformed
+        formRegisterDirector.setVisible(true);
+    }//GEN-LAST:event_menuItemRegisterDirectorActionPerformed
+
+    private void btnRegisterDirectorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegisterDirectorActionPerformed
+        String name = txtDirectorNameReg.getText();
+        Gender gender = rbtnMale.isSelected() ? Gender.Male : Gender.Female;
+        java.sql.Date dob = new java.sql.Date(txtDirectorDOB.getDate().getTime());
+        Country c = (Country)comboCountryOfDirector.getSelectedItem();
+        int id_country = c.getId();
+        Director dr = new Director(name, gender, dob, id_country);
+        daoDirector.insert(dr);
+        updateTableOfDirectors();
+        reloadComboDirectors();
+        resetDirectorRegisterForm();
+    }//GEN-LAST:event_btnRegisterDirectorActionPerformed
+    
+    private void resetDirectorRegisterForm(){
+        txtDirectorNameReg.setText(null);
+        rbtnMale.setSelected(true);
+        Calendar cal = Calendar.getInstance();
+        txtDirectorDOB.setDate(cal.getTime());
+        if(comboCountryOfDirector.getItemCount() > 0) {
+            comboCountryOfDirector.setSelectedIndex(0);
+        }
+    }
+    
+    private void btnCloseDirectorRegisterWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCloseDirectorRegisterWindowActionPerformed
+        formRegisterDirector.setVisible(false);
+    }//GEN-LAST:event_btnCloseDirectorRegisterWindowActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1284,6 +1560,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JButton btnSearch;
     private javax.swing.JButton btnUpdateMovie;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JCheckBox checkBoxClassification;
     private javax.swing.JCheckBox checkBoxCountry;
     private javax.swing.JCheckBox checkBoxDate;
@@ -1292,13 +1569,14 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JCheckBox checkBoxGenre;
     private javax.swing.JCheckBox checkBoxRating;
     private javax.swing.JComboBox comboClassification;
-    private javax.swing.JComboBox<String> comboCountryOfDirector;
+    private javax.swing.JComboBox comboCountryOfDirector;
     private javax.swing.JComboBox comboDirector;
     private javax.swing.JComboBox comboGenre;
     private javax.swing.JComboBox comboSearchClassification;
     private javax.swing.JComboBox comboSearchCountry;
     private javax.swing.JComboBox comboSearchDirector;
     private javax.swing.JComboBox comboSearchGenre;
+    private javax.swing.JFrame formRegisterDirector;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1313,6 +1591,8 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1326,8 +1606,8 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JLabel lblPoster;
-    private javax.swing.JFrame listOfCountries;
     private javax.swing.JMenu menuExit;
     private javax.swing.JMenuItem menuItemExit;
     private javax.swing.JMenuItem menuItemListOfClassifications;
@@ -1344,7 +1624,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JRadioButton rbtnMale;
     private javax.swing.JFrame registerClassification;
     private javax.swing.JFrame registerCountry;
-    private javax.swing.JFrame registerDirector;
     private javax.swing.JFrame registerGenre;
     private javax.swing.JSpinner spinnerDuration;
     private javax.swing.JSpinner spinnerDurationMAX;
@@ -1353,6 +1632,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JSpinner spinnerRatingMAX;
     private javax.swing.JSpinner spinnerRatingMIN;
     private javax.swing.JTable tableOfCountries;
+    private javax.swing.JTable tableOfDirectors;
     private javax.swing.JTable tableOfMovies;
     private javax.swing.JTextArea txtAreaDesc;
     private com.toedter.calendar.JDateChooser txtDirectorDOB;
@@ -1366,5 +1646,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JTextField txtMovieNameSearch;
     private javax.swing.JTextField txtName;
     private com.toedter.calendar.JDateChooser txtReleaseDate;
+    private javax.swing.JFrame windowListOfCountries;
+    private javax.swing.JFrame windowListOfDirectors;
     // End of variables declaration//GEN-END:variables
 }

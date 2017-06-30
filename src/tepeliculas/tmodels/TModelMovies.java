@@ -27,6 +27,7 @@ public class TModelMovies implements TableModel{
     
     private static final String[] titles = {
         "ID",
+        "Name",
         "Clasification",
         "Genre",
         "Duration",
