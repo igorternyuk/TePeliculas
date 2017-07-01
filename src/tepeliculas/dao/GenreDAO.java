@@ -160,11 +160,12 @@ public class GenreDAO implements DAO<Genre> {
     
 //    public static void main(String[] args) {
 //        GenreDAO dao = new GenreDAO();
-//        //Genre g = new Genre(13, "Talk-show program");
+//        Genre g = new Genre("Mega genre 2");
+//        dao.insert(g);
 //        //dao.delete(14);
 //        //dao.update(g);
-//        Genre g6 = dao.read(6);
-//        System.out.println("g6 = " + g6);
+//        //Genre g6 = dao.read(6);
+//        //System.out.println("g6 = " + g6);
 //        List<Genre> list = dao.readAll();
 //        for(Genre gnr : list){
 //            System.out.println(gnr);

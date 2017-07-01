@@ -495,7 +495,7 @@ public class MainWindow extends javax.swing.JFrame {
         formRegisterDirector.setResizable(false);
 
         btnRegisterDirector.setFont(new java.awt.Font("Dialog", 1, 14)); // NOI18N
-        btnRegisterDirector.setText("Registrar");
+        btnRegisterDirector.setText("Register");
         btnRegisterDirector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegisterDirectorActionPerformed(evt);
@@ -602,10 +602,12 @@ public class MainWindow extends javax.swing.JFrame {
         formRegisterCountry.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
         formRegisterCountry.getContentPane().add(txtCountryNameRegister, new org.netbeans.lib.awtextra.AbsoluteConstraints(69, 12, 157, -1));
 
+        jLabel17.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel17.setText("Name:");
         formRegisterCountry.getContentPane().add(jLabel17, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 12, -1, -1));
 
-        btnRegisterCountry.setText("Registrar");
+        btnRegisterCountry.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnRegisterCountry.setText("Register");
         btnRegisterCountry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegisterCountryActionPerformed(evt);
@@ -613,6 +615,7 @@ public class MainWindow extends javax.swing.JFrame {
         });
         formRegisterCountry.getContentPane().add(btnRegisterCountry, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 49, -1, -1));
 
+        btnCloseCountryRegisterForm.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         btnCloseCountryRegisterForm.setText("Close");
         btnCloseCountryRegisterForm.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -626,10 +629,12 @@ public class MainWindow extends javax.swing.JFrame {
         formRegisterClassification.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
         formRegisterClassification.getContentPane().add(txtClassificationNameRegister, new org.netbeans.lib.awtextra.AbsoluteConstraints(69, 12, 157, -1));
 
+        jLabel26.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel26.setText("Name:");
         formRegisterClassification.getContentPane().add(jLabel26, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 12, -1, -1));
 
-        btnRegisterClassification.setText("Registrar");
+        btnRegisterClassification.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnRegisterClassification.setText("Register");
         btnRegisterClassification.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegisterClassificationActionPerformed(evt);
@@ -637,6 +642,7 @@ public class MainWindow extends javax.swing.JFrame {
         });
         formRegisterClassification.getContentPane().add(btnRegisterClassification, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 49, -1, -1));
 
+        btnCloseClassificationRegisterForm.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         btnCloseClassificationRegisterForm.setText("Close");
         btnCloseClassificationRegisterForm.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -650,10 +656,12 @@ public class MainWindow extends javax.swing.JFrame {
         formRegisterGenre.getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
         formRegisterGenre.getContentPane().add(txtGenreNameRegister, new org.netbeans.lib.awtextra.AbsoluteConstraints(69, 12, 157, -1));
 
+        jLabel27.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel27.setText("Name:");
         formRegisterGenre.getContentPane().add(jLabel27, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 12, -1, -1));
 
-        btnRegisterGenre.setText("Registrar");
+        btnRegisterGenre.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        btnRegisterGenre.setText("Register");
         btnRegisterGenre.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegisterGenreActionPerformed(evt);
@@ -661,6 +669,7 @@ public class MainWindow extends javax.swing.JFrame {
         });
         formRegisterGenre.getContentPane().add(btnRegisterGenre, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 49, -1, -1));
 
+        btnCloseGenreRegisterForm.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         btnCloseGenreRegisterForm.setText("Close");
         btnCloseGenreRegisterForm.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1644,7 +1653,7 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_menuItemRegisterClssificationActionPerformed
 
     private void menuItemRegisterGenreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemRegisterGenreActionPerformed
-        formRegisterClassification.setVisible(true);
+        formRegisterGenre.setVisible(true);
     }//GEN-LAST:event_menuItemRegisterGenreActionPerformed
 
     private void menuItemListOfClassificationsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemListOfClassificationsActionPerformed
@@ -1683,7 +1692,7 @@ public class MainWindow extends javax.swing.JFrame {
     private void btnRegisterClassificationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegisterClassificationActionPerformed
         if(!txtClassificationNameRegister.getText().isEmpty()){
             Classification cl = new Classification(
-                    txtClassificationNameRegister.getText()
+                txtClassificationNameRegister.getText()
             );
             daoClassification.insert(cl);
             reloadComboClassifications();
